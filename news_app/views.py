@@ -1,6 +1,9 @@
 from django.shortcuts import render,get_object_or_404
+from django.views.generic import TemplateView, ListView
+
+from .forms import ContactForm
 from .models import Category, News
-from django.http import Http404
+from django.http import Http404, HttpResponse
 
 
 # Create your views here.
@@ -20,6 +23,97 @@ def news_detail(request, id):
     }
 
     return render(request, "news/news_detail.html", context=context)
+
+
+
+
+class HomePageView(TemplateView):
+    model = News
+    template_name = 'news/index.html'
+    context_object_name = 'news'
+
+    def get_context_data(self, **kwargs):
+        contex = super().get_context_data(**kwargs)
+        contex['categories'] = Category.objects.all()
+        contex['news_list'] = News.published.all().order_by('-publish_time')[:4]
+        contex['local_news'] = News.published.all().filter(category__name="Uzbekistan").order_by[:4]
+        contex['sport_news'] = News.published.all().filter(category__name="Sport").order_by('-publish_time')
+        contex['avto_news'] = News.published.all().filter(category__name="Avto").order_by[:4]
+        contex['world_news'] = News.published.all().filter(category__name="Jahon").order_by[0:4]
+        contex['economy'] = News.published.all().filter(category__name="Iqtisodiyot").order_by[:4]
+        return contex
+
+
+class LocalNewsView(ListView):
+    model = News
+    template_name = 'news/local.html'
+    context_object_name = 'localnews'
+
+    def get_queryset(self, **kwargs):
+        news = News.published.all().filter(category__name="Uzbekistan").order_by('-publish_time')
+        return news
+
+
+class SportNewsView(ListView):
+    model = News
+    template_name = 'news/sport.html'
+    context_object_name = 'sportnews'
+
+    def get_queryset(self, **kwargs):
+        news = News.published.all().filter(category__name="Sport").order_by('-publish_time')
+        return news
+
+
+class AvtoNewsView(ListView):
+    model = News
+    template_name = 'news/avtomabil.html'
+    context_object_name = 'avtonews'
+
+    def get_queryset(self, **kwargs):
+        news = News.published.all().filter(category__name="Avto").order_by('-publish_time')
+        return news
+
+
+class JahonNewsView(ListView):
+    model = News
+    template_name = 'news/jahon.html'
+    context_object_name = 'jahonnews'
+
+    def get_queryset(self, **kwargs):
+        news = News.published.all().filter(category__name="Jahon").order_by('-publish_time')
+        return news
+
+
+class IqtisodiyotNewsView(ListView):
+    model = News
+    template_name = 'news/iqtisodiyot.html'
+    context_object_name = 'iqtisodiyotnews'
+
+    def get_queryset(self, **kwargs):
+        news = News.published.all().filter(category__name="Iqtisodiyot").order_by('-publish_time')
+        return news
+
+
+class ContactPageView(TemplateView):
+    template_name = 'news/contact.html'
+
+    def get(self, request, *args, **kwargs):
+        form = ContactForm()
+        context = {
+            'form': form
+        }
+        return render(request, "news/contact.html", context)
+
+    def post(self, request, *args, **kwargs):
+        form = ContactForm(request.POST)
+        if request.method == 'POST' and form.is_valid():
+            form.save()
+            return HttpResponse("<h2> Murojaatingiz qabul qilindi <h2>")
+        context = {
+            'form':form
+        }
+        return render(request, 'news/contact.html', context)
+
 
 
 def HomePageView(request):
@@ -427,3 +521,50 @@ def IqtisodPage(request):
         "iqtisodiyot18": iqtisodiyot18,
     }
     return render(request, 'news/iqtisodiyot.html', context)
+
+
+def contact(request):
+    data = News.objects.filter(status=News.Status.Published)
+    category = Category.objects.all()
+
+    context = {
+        "data": data,
+        "category": category,
+    }
+
+    return render(request, "news/contact.html", context)
+
+
+def single(request):
+    data = News.objects.filter(status=News.Status.Published)
+    category = Category.objects.all()
+
+    context = {
+        "data": data,
+        "category": category,
+    }
+
+    return render(request, "news/single.html", context)
+
+
+
+
+class ContactPageView(TemplateView):
+    templates_name = 'news/contact.html'
+
+    def get(self, request, *args, **kwargs):
+        form = ContactForm()
+        context = {
+            'form': form
+        }
+        return render(request, "news/contact.html", context)
+
+    def post(self, request, *args, **kwargs):
+        form = ContactForm(request.POST)
+        if request.method == 'POST' and form.is_valid():
+            form.save()
+            return HttpResponse("<h2> Murojaatingiz qabul qilindi <h2>")
+        context = {
+            'form': form
+        }
+        return render(request, 'news/contact.html', context)
